@@ -1,5 +1,5 @@
 <?php
-
+// administrador/examenes.php - CON RESTRICCIONES
 require_once '../config/config.php';
 require_once '../config/database.php';
 require_once '../includes/functions.php';
@@ -105,19 +105,9 @@ include '../includes/header.php';
                                                     title="Registrar Calificaciones">
                                                 <i class="bi bi-pencil-square"></i>
                                             </button>
-                                            <button class="btn btn-sm btn-info btn-ver-resultados" 
-                                                    data-id="<?php echo $examen['id_examen']; ?>"
-                                                    data-titulo="<?php echo escape($examen['titulo']); ?>"
-                                                    title="Ver Resultados">
-                                                <i class="bi bi-eye"></i>
-                                            </button>
-                                            <button class="btn btn-sm btn-warning btn-editar-examen" 
-                                                    data-examen='<?php echo json_encode($examen); ?>'
-                                                    title="Editar">
-                                                <i class="bi bi-pencil"></i>
-                                            </button>
                                             <button class="btn btn-sm btn-danger btn-eliminar-examen" 
                                                     data-id="<?php echo $examen['id_examen']; ?>"
+                                                    data-titulo="<?php echo escape($examen['titulo']); ?>"
                                                     title="Eliminar">
                                                 <i class="bi bi-trash"></i>
                                             </button>
@@ -141,18 +131,18 @@ include '../includes/header.php';
                 <h5 class="modal-title">Crear Nuevo Examen</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <form method="POST" action="guardar_examen.php">
+            <form method="POST" action="guardar_examen.php" id="formNuevoExamen">
                 <div class="modal-body">
                     <input type="hidden" name="csrf_token" value="<?php echo generate_csrf_token(); ?>">
                     
                     <div class="mb-3">
                         <label class="form-label">Título *</label>
-                        <input type="text" class="form-control" name="titulo" required>
+                        <input type="text" class="form-control" name="titulo" required maxlength="100">
                     </div>
                     
                     <div class="mb-3">
                         <label class="form-label">Descripción</label>
-                        <textarea class="form-control" name="descripcion" rows="3"></textarea>
+                        <textarea class="form-control" name="descripcion" rows="3" maxlength="500"></textarea>
                     </div>
                     
                     <div class="row">
@@ -181,18 +171,33 @@ include '../includes/header.php';
                         </div>
                     </div>
                     
+                    <div class="alert alert-warning">
+                        <strong><i class="bi bi-exclamation-triangle"></i> Restricción horaria:</strong>
+                        Los exámenes solo pueden programarse entre las <strong>09:30 y 19:00</strong>.
+                    </div>
+                    
                     <div class="row">
                         <div class="col-md-4 mb-3">
                             <label class="form-label">Fecha *</label>
-                            <input type="date" class="form-control" name="fecha" min="<?php echo date('Y-m-d'); ?>" required>
+                            <input type="date" class="form-control" name="fecha" id="fecha_examen" 
+                                   min="<?php echo date('Y-m-d'); ?>" required>
                         </div>
                         <div class="col-md-4 mb-3">
                             <label class="form-label">Hora Inicio *</label>
-                            <input type="time" class="form-control" name="hora_inicio" required>
+                            <input type="time" class="form-control" name="hora_inicio" id="hora_examen" 
+                                   min="09:30" max="19:00" required>
+                            <small class="text-muted">Entre 09:30 - 19:00</small>
                         </div>
                         <div class="col-md-4 mb-3">
                             <label class="form-label">Duración (min) *</label>
-                            <input type="number" class="form-control" name="duracion" min="15" step="15" value="60" required>
+                            <select class="form-select" name="duracion" required>
+                                <option value="">Seleccione...</option>
+                                <option value="30">30 minutos</option>
+                                <option value="45">45 minutos</option>
+                                <option value="60" selected>60 minutos</option>
+                                <option value="90">90 minutos</option>
+                                <option value="120">120 minutos</option>
+                            </select>
                         </div>
                     </div>
                     
@@ -200,86 +205,15 @@ include '../includes/header.php';
                         <label class="form-label">Ubicación</label>
                         <input type="text" class="form-control" name="ubicacion" value="Online">
                     </div>
+                    
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle"></i> 
+                        <strong>Nota:</strong> Una vez creado el examen, NO podrás editarlo. Asegúrate de que todos los datos sean correctos.
+                    </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
                     <button type="submit" class="btn btn-primary">Crear Examen</button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
-
-<!-- Modal Editar Examen -->
-<div class="modal fade" id="modalEditarExamen" tabindex="-1">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Editar Examen</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <form method="POST" action="editar_examen.php">
-                <div class="modal-body">
-                    <input type="hidden" name="csrf_token" value="<?php echo generate_csrf_token(); ?>">
-                    <input type="hidden" name="id_examen" id="edit_id_examen">
-                    
-                    <div class="mb-3">
-                        <label class="form-label">Título *</label>
-                        <input type="text" class="form-control" name="titulo" id="edit_titulo" required>
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label class="form-label">Descripción</label>
-                        <textarea class="form-control" name="descripcion" id="edit_descripcion" rows="3"></textarea>
-                    </div>
-                    
-                    <div class="row">
-                        <div class="col-md-4 mb-3">
-                            <label class="form-label">Tipo *</label>
-                            <select class="form-select" name="tipo" id="edit_tipo" required>
-                                <option value="oral">Oral</option>
-                                <option value="escrito">Escrito</option>
-                                <option value="listening">Listening</option>
-                                <option value="completo">Completo</option>
-                            </select>
-                        </div>
-                        <div class="col-md-4 mb-3">
-                            <label class="form-label">Nivel *</label>
-                            <select class="form-select" name="nivel" id="edit_nivel" required>
-                                <option value="basico">Básico</option>
-                                <option value="intermedio">Intermedio</option>
-                                <option value="avanzado">Avanzado</option>
-                            </select>
-                        </div>
-                        <div class="col-md-4 mb-3">
-                            <label class="form-label">Puntuación Máxima *</label>
-                            <input type="number" class="form-control" name="puntuacion_maxima" id="edit_puntuacion_maxima" min="1" step="0.01" required>
-                        </div>
-                    </div>
-                    
-                    <div class="row">
-                        <div class="col-md-4 mb-3">
-                            <label class="form-label">Fecha *</label>
-                            <input type="date" class="form-control" name="fecha" id="edit_fecha" required>
-                        </div>
-                        <div class="col-md-4 mb-3">
-                            <label class="form-label">Hora Inicio *</label>
-                            <input type="time" class="form-control" name="hora_inicio" id="edit_hora_inicio" required>
-                        </div>
-                        <div class="col-md-4 mb-3">
-                            <label class="form-label">Duración (min) *</label>
-                            <input type="number" class="form-control" name="duracion" id="edit_duracion" min="15" step="15" required>
-                        </div>
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label class="form-label">Ubicación</label>
-                        <input type="text" class="form-control" name="ubicacion" id="edit_ubicacion">
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="submit" class="btn btn-primary">Guardar Cambios</button>
                 </div>
             </form>
         </div>
@@ -343,45 +277,17 @@ include '../includes/header.php';
     </div>
 </div>
 
-<!-- Modal Ver Resultados -->
-<div class="modal fade" id="modalVerResultados" tabindex="-1">
-    <div class="modal-dialog modal-xl">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="tituloVerResultados">Resultados del Examen</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body" id="contenidoResultados">
-                <!-- Se llenará con AJAX -->
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
-            </div>
-        </div>
-    </div>
-</div>
-
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Editar examen
-    document.querySelectorAll('.btn-editar-examen').forEach(btn => {
-        btn.addEventListener('click', function() {
-            const examen = JSON.parse(this.getAttribute('data-examen'));
-            const modal = new bootstrap.Modal(document.getElementById('modalEditarExamen'));
-            
-            document.getElementById('edit_id_examen').value = examen.id_examen;
-            document.getElementById('edit_titulo').value = examen.titulo;
-            document.getElementById('edit_descripcion').value = examen.descripcion || '';
-            document.getElementById('edit_tipo').value = examen.tipo;
-            document.getElementById('edit_nivel').value = examen.nivel;
-            document.getElementById('edit_puntuacion_maxima').value = examen.puntuacion_maxima;
-            document.getElementById('edit_fecha').value = examen.fecha;
-            document.getElementById('edit_hora_inicio').value = examen.hora_inicio.substring(0, 5);
-            document.getElementById('edit_duracion').value = examen.duracion;
-            document.getElementById('edit_ubicacion').value = examen.ubicacion || '';
-            
-            modal.show();
-        });
+    // Validar hora del examen (09:30 - 19:00)
+    document.getElementById('formNuevoExamen')?.addEventListener('submit', function(e) {
+        const hora = document.getElementById('hora_examen').value;
+        
+        if (hora < '09:30' || hora > '19:00') {
+            e.preventDefault();
+            alert('La hora del examen debe estar entre las 09:30 y las 19:00');
+            return false;
+        }
     });
     
     // Registrar calificaciones
@@ -405,35 +311,13 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
     
-    // Ver resultados
-    document.querySelectorAll('.btn-ver-resultados').forEach(btn => {
-        btn.addEventListener('click', function() {
-            const id = this.getAttribute('data-id');
-            const titulo = this.getAttribute('data-titulo');
-            const modal = new bootstrap.Modal(document.getElementById('modalVerResultados'));
-            
-            document.getElementById('tituloVerResultados').textContent = `Resultados - ${titulo}`;
-            document.getElementById('contenidoResultados').innerHTML = '<div class="text-center"><div class="spinner-border" role="status"></div></div>';
-            
-            // Cargar resultados con AJAX
-            fetch(`ver_resultados_examen.php?id=${id}`)
-                .then(response => response.text())
-                .then(html => {
-                    document.getElementById('contenidoResultados').innerHTML = html;
-                })
-                .catch(error => {
-                    document.getElementById('contenidoResultados').innerHTML = '<div class="alert alert-danger">Error al cargar resultados</div>';
-                });
-            
-            modal.show();
-        });
-    });
-    
     // Eliminar examen
     document.querySelectorAll('.btn-eliminar-examen').forEach(btn => {
         btn.addEventListener('click', function() {
             const id = this.getAttribute('data-id');
-            if (confirm('¿Estás seguro de que deseas eliminar este examen?\n\nSe eliminarán también todas las notas asociadas.')) {
+            const titulo = this.getAttribute('data-titulo');
+            
+            if (confirm(`¿Estás segura de que deseas ELIMINAR el examen "${titulo}"?\n\nEsta acción NO se puede deshacer y se eliminarán también todas las calificaciones asociadas.`)) {
                 window.location.href = `eliminar_examen.php?id=${id}`;
             }
         });

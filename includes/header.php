@@ -15,10 +15,29 @@
     <link href="<?php echo SITE_URL; ?>assets/css/styles.css" rel="stylesheet">
 </head>
 <body>
+    <?php
+    // AUTO-CADUCAR CLASES PASADAS (ejecutar solo una vez por sesión para no sobrecargar)
+    if (is_logged_in() && !isset($_SESSION['clases_verificadas_' . date('YmdH')])) {
+        $db = Database::getInstance()->getConnection();
+        try {
+            $stmt = $db->prepare("
+                UPDATE clases 
+                SET estado = 'completada' 
+                WHERE estado = 'programada' 
+                AND CONCAT(fecha, ' ', hora_fin) < NOW()
+            ");
+            $stmt->execute();
+            $_SESSION['clases_verificadas_' . date('YmdH')] = true;
+        } catch (Exception $e) {
+            error_log("Error al auto-caducar clases: " . $e->getMessage());
+        }
+    }
+    ?>
+    
     <!-- Navbar -->
     <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
         <div class="container-fluid">
-            <a class="navbar-brand" href="#">
+            <a class="navbar-brand" href="<?php echo SITE_URL; ?>">
                 <i class="bi bi-book"></i> Clases de Inglés
             </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
