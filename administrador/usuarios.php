@@ -1,5 +1,4 @@
 <?php
-
 require_once '../config/config.php';
 require_once '../config/database.php';
 require_once '../includes/functions.php';
@@ -44,6 +43,10 @@ $alumnos_list = $stmt->fetchAll();
 
 $stmt = $db->query("SELECT id_usuario, nombre, apellidos FROM usuarios WHERE rol = 'padre' AND activo = 1 ORDER BY nombre");
 $padres_list = $stmt->fetchAll();
+
+// Calcular fechas límite
+$min_date = date('Y-m-d', strtotime('-100 years'));
+$max_date = date('Y-m-d', strtotime('-3 years'));
 
 include '../includes/header.php';
 ?>
@@ -103,7 +106,6 @@ include '../includes/header.php';
                         <table class="table table-hover">
                             <thead>
                                 <tr>
-                                    <th>ID</th>
                                     <th>Nombre Completo</th>
                                     <th>Email</th>
                                     <th>Teléfono</th>
@@ -115,7 +117,6 @@ include '../includes/header.php';
                             <tbody>
                                 <?php foreach ($usuarios as $usuario): ?>
                                     <tr>
-                                        <td><?php echo $usuario['id_usuario']; ?></td>
                                         <td>
                                             <strong><?php echo escape($usuario['nombre'] . ' ' . $usuario['apellidos']); ?></strong>
                                         </td>
@@ -141,7 +142,7 @@ include '../includes/header.php';
                                                     title="Editar">
                                                 <i class="bi bi-pencil"></i>
                                             </button>
-                                            <?php if ($usuario['rol'] !== 'administrador'): ?>
+                                            <?php if ($usuario['rol'] !== 'administrador' && $usuario['id_usuario'] !== $_SESSION['user_id']): ?>
                                                 <button class="btn btn-sm btn-success btn-asociar-usuario" 
                                                         data-id="<?php echo $usuario['id_usuario']; ?>"
                                                         data-rol="<?php echo $usuario['rol']; ?>"
@@ -168,7 +169,7 @@ include '../includes/header.php';
     </div>
 </div>
 
-<!-- Modal Nuevo Usuario (MEJORADO) -->
+<!-- Modal Nuevo Usuario -->
 <div class="modal fade" id="modalNuevoUsuario" tabindex="-1">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
@@ -176,18 +177,18 @@ include '../includes/header.php';
                 <h5 class="modal-title">Nuevo Usuario</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <form method="POST" action="guardar_usuario.php">
+            <form method="POST" action="guardar_usuario.php" class="needs-validation" novalidate>
                 <div class="modal-body">
                     <input type="hidden" name="csrf_token" value="<?php echo generate_csrf_token(); ?>">
                     
                     <div class="row">
                         <div class="col-md-6 mb-3">
                             <label class="form-label">Nombre *</label>
-                            <input type="text" class="form-control" name="nombre" required>
+                            <input type="text" class="form-control" name="nombre" required maxlength="50" pattern="[a-záéíóúñüA-ZÁÉÍÓÚÑÜ\s\-']+">
                         </div>
                         <div class="col-md-6 mb-3">
                             <label class="form-label">Apellidos *</label>
-                            <input type="text" class="form-control" name="apellidos" required>
+                            <input type="text" class="form-control" name="apellidos" required maxlength="50" pattern="[a-záéíóúñüA-ZÁÉÍÓÚÑÜ\s\-']+">
                         </div>
                     </div>
                     
@@ -198,14 +199,22 @@ include '../includes/header.php';
                         </div>
                         <div class="col-md-6 mb-3">
                             <label class="form-label">Teléfono</label>
-                            <input type="tel" class="form-control" name="telefono">
+                            <input type="tel" class="form-control" name="telefono" pattern="(\+34)?[6-9]\d{8}">
+                            <small class="text-muted">Formato: 612345678</small>
                         </div>
                     </div>
                     
                     <div class="row">
                         <div class="col-md-6 mb-3">
                             <label class="form-label">Contraseña *</label>
-                            <input type="password" class="form-control" name="password" required>
+                            <input type="password" class="form-control" name="password" id="new_password" required>
+                            <ul class="password-requirements small mt-2" id="new_password_req">
+                                <li id="new_req_length">Mínimo 8 caracteres</li>
+                                <li id="new_req_uppercase">Una mayúscula</li>
+                                <li id="new_req_lowercase">Una minúscula</li>
+                                <li id="new_req_number">Un número</li>
+                                <li id="new_req_special">Un carácter especial</li>
+                            </ul>
                         </div>
                         <div class="col-md-6 mb-3">
                             <label class="form-label">Rol *</label>
@@ -219,15 +228,16 @@ include '../includes/header.php';
                     
                     <div class="row">
                         <div class="col-md-6 mb-3">
-                            <label class="form-label">Fecha de Nacimiento</label>
-                            <input type="date" class="form-control" name="fecha_nacimiento">
+                            <label class="form-label">Fecha de Nacimiento *</label>
+                            <input type="date" class="form-control" name="fecha_nacimiento" 
+                                   min="<?php echo $min_date; ?>" max="<?php echo $max_date; ?>" required>
+                            <small class="text-muted">Edad: 3-100 años</small>
                         </div>
                         <div class="col-md-6 mb-3" id="asociacion_nuevo" style="display: none;">
-                            <label class="form-label" id="label_asociacion">Asociar con</label>
+                            <label class="form-label" id="label_asociacion">Asociar con (opcional)</label>
                             <select class="form-select" name="asociar_con" id="select_asociacion">
                                 <option value="">No asociar ahora</option>
                             </select>
-                            <small class="text-muted">Opcional - Se puede hacer después</small>
                         </div>
                     </div>
                 </div>
@@ -248,9 +258,7 @@ include '../includes/header.php';
                 <h5 class="modal-title">Detalles del Usuario</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <div class="modal-body" id="contenidoVerUsuario">
-                <!-- Se llenará con JavaScript -->
-            </div>
+            <div class="modal-body" id="contenidoVerUsuario"></div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
             </div>
@@ -266,7 +274,7 @@ include '../includes/header.php';
                 <h5 class="modal-title">Editar Usuario</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <form method="POST" action="editar_usuario.php">
+            <form method="POST" action="editar_usuario.php" class="needs-validation" novalidate>
                 <div class="modal-body">
                     <input type="hidden" name="csrf_token" value="<?php echo generate_csrf_token(); ?>">
                     <input type="hidden" name="id_usuario" id="edit_id_usuario">
@@ -274,11 +282,11 @@ include '../includes/header.php';
                     <div class="row">
                         <div class="col-md-6 mb-3">
                             <label class="form-label">Nombre *</label>
-                            <input type="text" class="form-control" name="nombre" id="edit_nombre" required>
+                            <input type="text" class="form-control" name="nombre" id="edit_nombre" required maxlength="50" pattern="[a-záéíóúñüA-ZÁÉÍÓÚÑÜ\s\-']+">
                         </div>
                         <div class="col-md-6 mb-3">
                             <label class="form-label">Apellidos *</label>
-                            <input type="text" class="form-control" name="apellidos" id="edit_apellidos" required>
+                            <input type="text" class="form-control" name="apellidos" id="edit_apellidos" required maxlength="50" pattern="[a-záéíóúñüA-ZÁÉÍÓÚÑÜ\s\-']+">
                         </div>
                     </div>
                     
@@ -289,24 +297,41 @@ include '../includes/header.php';
                         </div>
                         <div class="col-md-6 mb-3">
                             <label class="form-label">Teléfono</label>
-                            <input type="tel" class="form-control" name="telefono" id="edit_telefono">
+                            <input type="tel" class="form-control" name="telefono" id="edit_telefono" pattern="(\+34)?[6-9]\d{8}">
+                            <small class="text-muted">Formato: 612345678</small>
                         </div>
                     </div>
                     
                     <div class="row">
-                        <div class="col-md-12 mb-3">
-                            <label class="form-label">Fecha de Nacimiento</label>
-                            <input type="date" class="form-control" name="fecha_nacimiento" id="edit_fecha_nacimiento">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Fecha de Nacimiento *</label>
+                            <input type="date" class="form-control" name="fecha_nacimiento" id="edit_fecha_nacimiento" 
+                                   min="<?php echo $min_date; ?>" max="<?php echo $max_date; ?>" required>
+                            <small class="text-muted">Edad: 3-100 años</small>
+                        </div>
+                        <div class="col-md-6 mb-3" id="asociacion_edit" style="display: none;">
+                            <label class="form-label" id="label_asociacion_edit">Asociar con (opcional)</label>
+                            <select class="form-select" name="asociar_con" id="select_asociacion_edit">
+                                <option value="">No cambiar asociación</option>
+                            </select>
                         </div>
                     </div>
                     
                     <div class="alert alert-info">
-                        <strong>Nota:</strong> Deja la contraseña en blanco si no deseas cambiarla
+                        <strong>Cambiar contraseña (opcional)</strong>
+                        <p class="mb-0 small">Solo rellena estos campos si deseas cambiar la contraseña</p>
                     </div>
                     
                     <div class="mb-3">
-                        <label class="form-label">Nueva Contraseña (opcional)</label>
-                        <input type="password" class="form-control" name="password">
+                        <label class="form-label">Nueva Contraseña</label>
+                        <input type="password" class="form-control" name="password" id="edit_password">
+                        <ul class="password-requirements small mt-2" id="edit_password_req" style="display: none;">
+                            <li id="edit_req_length">Mínimo 8 caracteres</li>
+                            <li id="edit_req_uppercase">Una mayúscula</li>
+                            <li id="edit_req_lowercase">Una minúscula</li>
+                            <li id="edit_req_number">Un número</li>
+                            <li id="edit_req_special">Un carácter especial</li>
+                        </ul>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -348,13 +373,53 @@ include '../includes/header.php';
     </div>
 </div>
 
+<style>
+.password-requirements li {
+    color: #dc3545;
+}
+.password-requirements li.valid {
+    color: #198754;
+}
+.password-requirements li:before {
+    content: "✗ ";
+    font-weight: bold;
+}
+.password-requirements li.valid:before {
+    content: "✓ ";
+}
+</style>
+
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const alumnos = <?php echo json_encode($alumnos_list); ?>;
     const padres = <?php echo json_encode($padres_list); ?>;
     
+    // Validación contraseña NUEVO usuario
+    document.getElementById('new_password')?.addEventListener('input', function() {
+        validatePasswordInput(this.value, 'new_');
+    });
+    
+    // Validación contraseña EDITAR usuario
+    document.getElementById('edit_password')?.addEventListener('input', function() {
+        const reqDiv = document.getElementById('edit_password_req');
+        if (this.value.length > 0) {
+            reqDiv.style.display = 'block';
+            validatePasswordInput(this.value, 'edit_');
+        } else {
+            reqDiv.style.display = 'none';
+        }
+    });
+    
+    function validatePasswordInput(password, prefix) {
+        document.getElementById(prefix + 'req_length').classList.toggle('valid', password.length >= 8);
+        document.getElementById(prefix + 'req_uppercase').classList.toggle('valid', /[A-Z]/.test(password));
+        document.getElementById(prefix + 'req_lowercase').classList.toggle('valid', /[a-z]/.test(password));
+        document.getElementById(prefix + 'req_number').classList.toggle('valid', /[0-9]/.test(password));
+        document.getElementById(prefix + 'req_special').classList.toggle('valid', /[!@#$%^&*(),.?":{}|<>]/.test(password));
+    }
+    
     // Rol nuevo usuario - mostrar campo de asociación
-    document.getElementById('rol_nuevo').addEventListener('change', function() {
+    document.getElementById('rol_nuevo')?.addEventListener('change', function() {
         const asociacionDiv = document.getElementById('asociacion_nuevo');
         const selectAsociacion = document.getElementById('select_asociacion');
         const labelAsociacion = document.getElementById('label_asociacion');
@@ -417,6 +482,29 @@ document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('edit_telefono').value = usuario.telefono || '';
             document.getElementById('edit_fecha_nacimiento').value = usuario.fecha_nacimiento || '';
             
+            // Mostrar campo de asociación si es alumno o padre
+            const asociacionDiv = document.getElementById('asociacion_edit');
+            const selectAsociacion = document.getElementById('select_asociacion_edit');
+            const labelAsociacion = document.getElementById('label_asociacion_edit');
+            
+            selectAsociacion.innerHTML = '<option value="">No cambiar asociación</option>';
+            
+            if (usuario.rol === 'alumno') {
+                asociacionDiv.style.display = 'block';
+                labelAsociacion.textContent = 'Asociar con Padre (opcional)';
+                padres.forEach(padre => {
+                    selectAsociacion.innerHTML += `<option value="${padre.id_usuario}">${padre.nombre} ${padre.apellidos}</option>`;
+                });
+            } else if (usuario.rol === 'padre') {
+                asociacionDiv.style.display = 'block';
+                labelAsociacion.textContent = 'Asociar con Alumno (opcional)';
+                alumnos.forEach(alumno => {
+                    selectAsociacion.innerHTML += `<option value="${alumno.id_usuario}">${alumno.nombre} ${alumno.apellidos}</option>`;
+                });
+            } else {
+                asociacionDiv.style.display = 'none';
+            }
+            
             modal.show();
         });
     });
@@ -463,10 +551,22 @@ document.addEventListener('DOMContentLoaded', function() {
             const id = this.getAttribute('data-id');
             const nombre = this.getAttribute('data-nombre');
             
-            if (confirm(`¿Estás seguro de que deseas ELIMINAR a ${nombre}?\n\nEsta acción NO se puede deshacer.`)) {
+            if (confirm(`¿Estás segura de que deseas ELIMINAR a ${nombre}?\n\nEsta acción NO se puede deshacer y eliminará:\n- Todos sus datos\n- Sus reservas\n- Su progreso\n- Sus relaciones`)) {
                 window.location.href = `eliminar_usuario.php?id=${id}`;
             }
         });
+    });
+    
+    // Bootstrap form validation
+    const forms = document.querySelectorAll('.needs-validation');
+    Array.from(forms).forEach(form => {
+        form.addEventListener('submit', function(event) {
+            if (!form.checkValidity()) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+            form.classList.add('was-validated');
+        }, false);
     });
 });
 </script>

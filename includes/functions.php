@@ -246,4 +246,243 @@ function paginate($total_records, $records_per_page, $current_page) {
         'records_per_page' => $records_per_page
     ];
 }
+/**
+ * Validar contraseña segura
+ * Debe tener: mínimo 8 caracteres, una mayúscula, una minúscula, un número y un carácter especial
+ */
+function validate_password($password) {
+    $errors = [];
+    
+    if (strlen($password) < 8) {
+        $errors[] = "La contraseña debe tener al menos 8 caracteres";
+    }
+    
+    if (!preg_match('/[A-Z]/', $password)) {
+        $errors[] = "Debe contener al menos una letra mayúscula";
+    }
+    
+    if (!preg_match('/[a-z]/', $password)) {
+        $errors[] = "Debe contener al menos una letra minúscula";
+    }
+    
+    if (!preg_match('/[0-9]/', $password)) {
+        $errors[] = "Debe contener al menos un número";
+    }
+    
+    if (!preg_match('/[!@#$%^&*(),.?":{}|<>]/', $password)) {
+        $errors[] = "Debe contener al menos un carácter especial (!@#$%^&*(),.?\":{}|<>)";
+    }
+    
+    return [
+        'valid' => empty($errors),
+        'errors' => $errors
+    ];
+}
+
+/**
+ * Validar fecha de nacimiento
+ * Debe ser realista: entre 100 años atrás y hoy
+ */
+function validate_birthdate($date) {
+    if (empty($date)) {
+        return ['valid' => false, 'error' => 'La fecha de nacimiento es obligatoria'];
+    }
+    
+    $birth = new DateTime($date);
+    $today = new DateTime();
+    $age = $today->diff($birth)->y;
+    
+    // Fecha futura
+    if ($birth > $today) {
+        return ['valid' => false, 'error' => 'La fecha de nacimiento no puede ser futura'];
+    }
+    
+    // Menor de 3 años (demasiado joven para clases)
+    if ($age < 3) {
+        return ['valid' => false, 'error' => 'El alumno debe tener al menos 3 años'];
+    }
+    
+    // Mayor de 100 años
+    if ($age > 100) {
+        return ['valid' => false, 'error' => 'La fecha de nacimiento no es válida'];
+    }
+    
+    return ['valid' => true];
+}
+
+/**
+ * Validar fecha de clase/examen
+ * No puede ser en el pasado ni más de 1 año en el futuro
+ */
+function validate_class_date($date) {
+    if (empty($date)) {
+        return ['valid' => false, 'error' => 'La fecha es obligatoria'];
+    }
+    
+    $class_date = new DateTime($date);
+    $today = new DateTime();
+    $today->setTime(0, 0, 0); // Resetear hora para comparar solo fechas
+    
+    $one_year_future = clone $today;
+    $one_year_future->modify('+1 year');
+    
+    if ($class_date < $today) {
+        return ['valid' => false, 'error' => 'La fecha no puede ser en el pasado'];
+    }
+    
+    if ($class_date > $one_year_future) {
+        return ['valid' => false, 'error' => 'La fecha no puede ser más de un año en el futuro'];
+    }
+    
+    return ['valid' => true];
+}
+
+/**
+ * Validar teléfono español
+ */
+function validate_phone($phone) {
+    if (empty($phone)) {
+        return ['valid' => true]; // El teléfono es opcional
+    }
+    
+    // Eliminar espacios y caracteres no numéricos excepto +
+    $phone_clean = preg_replace('/[^\d+]/', '', $phone);
+    
+    // Validar formato español: 9 dígitos o +34 seguido de 9 dígitos
+    if (preg_match('/^(\+34)?[6-9]\d{8}$/', $phone_clean)) {
+        return ['valid' => true];
+    }
+    
+    return ['valid' => false, 'error' => 'El teléfono debe ser un número español válido (9 dígitos)'];
+}
+
+/**
+ * Sanitizar y validar hora
+ */
+function validate_time($time) {
+    if (empty($time)) {
+        return ['valid' => false, 'error' => 'La hora es obligatoria'];
+    }
+    
+    // Formato HH:MM
+    if (!preg_match('/^([01]\d|2[0-3]):([0-5]\d)$/', $time)) {
+        return ['valid' => false, 'error' => 'Formato de hora inválido (HH:MM)'];
+    }
+    
+    return ['valid' => true];
+}
+
+/**
+ * Validar duración de clase
+ */
+function validate_duration($minutes) {
+    if (!is_numeric($minutes) || $minutes < 15 || $minutes > 240) {
+        return ['valid' => false, 'error' => 'La duración debe estar entre 15 y 240 minutos'];
+    }
+    
+    // Solo múltiplos de 15
+    if ($minutes % 15 !== 0) {
+        return ['valid' => false, 'error' => 'La duración debe ser múltiplo de 15 minutos'];
+    }
+    
+    return ['valid' => true];
+}
+
+/**
+ * Validar precio
+ */
+function validate_price($price) {
+    if (!is_numeric($price) || $price < 0) {
+        return ['valid' => false, 'error' => 'El precio debe ser un número positivo'];
+    }
+    
+    if ($price > 1000) {
+        return ['valid' => false, 'error' => 'El precio parece demasiado alto'];
+    }
+    
+    return ['valid' => true];
+}
+
+/**
+ * Validar puntuación de examen
+ */
+function validate_score($score, $max_score) {
+    if (!is_numeric($score) || $score < 0) {
+        return ['valid' => false, 'error' => 'La puntuación debe ser un número positivo'];
+    }
+    
+    if ($score > $max_score) {
+        return ['valid' => false, 'error' => 'La puntuación no puede superar el máximo'];
+    }
+    
+    return ['valid' => true];
+}
+
+/**
+ * Validar nombre/apellidos
+ */
+function validate_name($name, $field = 'Nombre') {
+    if (empty($name)) {
+        return ['valid' => false, 'error' => "$field es obligatorio"];
+    }
+    
+    if (strlen($name) < 2) {
+        return ['valid' => false, 'error' => "$field debe tener al menos 2 caracteres"];
+    }
+    
+    if (strlen($name) > 50) {
+        return ['valid' => false, 'error' => "$field no puede superar los 50 caracteres"];
+    }
+    
+    // Solo letras, espacios, guiones y apóstrofes
+    if (!preg_match("/^[a-záéíóúñü\s\-']+$/iu", $name)) {
+        return ['valid' => false, 'error' => "$field contiene caracteres no válidos"];
+    }
+    
+    return ['valid' => true];
+}
+
+/**
+ * Generar mensaje de error HTML
+ */
+function format_validation_errors($errors) {
+    if (empty($errors)) {
+        return '';
+    }
+    
+    $html = '<ul class="mb-0">';
+    foreach ($errors as $error) {
+        $html .= '<li>' . escape($error) . '</li>';
+    }
+    $html .= '</ul>';
+    
+    return $html;
+}
+
+/**
+ * Validar archivo subido
+ */
+function validate_uploaded_file($file, $allowed_types = [], $max_size = MAX_FILE_SIZE) {
+    if ($file['error'] === UPLOAD_ERR_NO_FILE) {
+        return ['valid' => false, 'error' => 'No se ha seleccionado ningún archivo'];
+    }
+    
+    if ($file['error'] !== UPLOAD_ERR_OK) {
+        return ['valid' => false, 'error' => 'Error al subir el archivo'];
+    }
+    
+    if ($file['size'] > $max_size) {
+        $max_mb = $max_size / 1024 / 1024;
+        return ['valid' => false, 'error' => "El archivo supera el tamaño máximo de {$max_mb}MB"];
+    }
+    
+    $extension = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+    
+    if (!empty($allowed_types) && !in_array($extension, $allowed_types)) {
+        return ['valid' => false, 'error' => 'Tipo de archivo no permitido'];
+    }
+    
+    return ['valid' => true];
+}
+
 ?>

@@ -1,5 +1,5 @@
 <?php
-
+// administrador/materiales.php - SIMPLIFICADO
 require_once '../config/config.php';
 require_once '../config/database.php';
 require_once '../includes/functions.php';
@@ -59,10 +59,10 @@ include '../includes/header.php';
                             <div class="card-body">
                                 <div class="d-flex justify-content-between align-items-start mb-2">
                                     <h5 class="card-title"><?php echo escape($material['titulo']); ?></h5>
+                                    <span class="badge bg-primary">PDF</span>
                                 </div>
                                 
                                 <div class="mb-3">
-                                    <span class="badge bg-primary"><?php echo ucfirst($material['tipo']); ?></span>
                                     <span class="badge bg-secondary"><?php echo ucfirst($material['nivel']); ?></span>
                                     <?php if ($material['categoria']): ?>
                                         <span class="badge bg-info"><?php echo escape($material['categoria']); ?></span>
@@ -83,7 +83,6 @@ include '../includes/header.php';
                                 </div>
                                 
                                 <?php
-                                // Contar asignaciones
                                 $stmt_count = $db->prepare("SELECT COUNT(*) as total FROM material_asignado WHERE id_material = ?");
                                 $stmt_count->execute([$material['id_material']]);
                                 $asignaciones = $stmt_count->fetch()['total'];
@@ -93,14 +92,9 @@ include '../includes/header.php';
                                 </div>
                             </div>
                             <div class="card-footer bg-white">
-                                <div class="btn-group w-100" role="group">
-                                    <button class="btn btn-sm btn-success btn-asignar" data-id="<?php echo $material['id_material']; ?>">
-                                        <i class="bi bi-person-plus"></i> Asignar
-                                    </button>
-                                    <button class="btn btn-sm btn-danger btn-eliminar-material" data-id="<?php echo $material['id_material']; ?>">
-                                        <i class="bi bi-trash"></i>
-                                    </button>
-                                </div>
+                                <button class="btn btn-sm btn-success btn-asignar w-100" data-id="<?php echo $material['id_material']; ?>">
+                                    <i class="bi bi-person-plus"></i> Asignar a Alumnos
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -115,7 +109,7 @@ include '../includes/header.php';
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">Subir Nuevo Material</h5>
+                <h5 class="modal-title">Subir Nuevo Material (PDF)</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <form method="POST" action="procesar_material.php" enctype="multipart/form-data">
@@ -124,23 +118,17 @@ include '../includes/header.php';
                     
                     <div class="mb-3">
                         <label class="form-label">Título *</label>
-                        <input type="text" class="form-control" name="titulo" required>
+                        <input type="text" class="form-control" name="titulo" required maxlength="100">
                     </div>
                     
                     <div class="mb-3">
                         <label class="form-label">Descripción</label>
-                        <textarea class="form-control" name="descripcion" rows="3"></textarea>
+                        <textarea class="form-control" name="descripcion" rows="3" maxlength="500"></textarea>
+                        <small class="text-muted">Opcional - Máximo 500 caracteres</small>
                     </div>
                     
                     <div class="row">
-                        <div class="col-md-4 mb-3">
-                            <label class="form-label">Tipo *</label>
-                            <select class="form-select" name="tipo" id="tipo_material" required>
-                                <option value="">Seleccione...</option>
-                                <option value="pdf">PDF</option>
-                            </select>
-                        </div>
-                        <div class="col-md-4 mb-3">
+                        <div class="col-md-6 mb-3">
                             <label class="form-label">Nivel *</label>
                             <select class="form-select" name="nivel" required>
                                 <option value="">Seleccione...</option>
@@ -149,18 +137,22 @@ include '../includes/header.php';
                                 <option value="avanzado">Avanzado</option>
                             </select>
                         </div>
-                        <div class="col-md-4 mb-3">
+                        <div class="col-md-6 mb-3">
                             <label class="form-label">Categoría</label>
-                            <input type="text" class="form-control" name="categoria" placeholder="Ej: Gramática">
+                            <input type="text" class="form-control" name="categoria" placeholder="Ej: Gramática, Vocabulario..." maxlength="50">
                         </div>
                     </div>
                     
-                    <div class="mb-3" id="archivoDiv">
-                        <label class="form-label">Archivo *</label>
-                        <input type="file" class="form-control" name="archivo" id="archivo_input" required>
-                        <small class="form-text text-muted">Tamaño máximo: 5MB</small>
+                    <div class="mb-3">
+                        <label class="form-label">Archivo PDF *</label>
+                        <input type="file" class="form-control" name="archivo" accept=".pdf" required>
+                        <small class="text-muted">Solo archivos PDF</small>
                     </div>
                     
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle"></i> 
+                        <strong>Importante:</strong> Una vez subido el material, podrás asignarlo a los alumnos que necesites.
+                    </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
@@ -206,11 +198,6 @@ include '../includes/header.php';
                             <?php endforeach; ?>
                         </div>
                     </div>
-                    
-                    <div class="mb-3">
-                        <label class="form-label">Fecha Límite (opcional)</label>
-                        <input type="date" class="form-control" name="fecha_limite" min="<?php echo date('Y-m-d'); ?>">
-                    </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
@@ -223,12 +210,14 @@ include '../includes/header.php';
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    
     // Modal asignar
     const modalAsignar = new bootstrap.Modal(document.getElementById('modalAsignar'));
     document.querySelectorAll('.btn-asignar').forEach(function(btn) {
         btn.addEventListener('click', function() {
             document.getElementById('id_material_asignar').value = this.getAttribute('data-id');
+            // Limpiar checkboxes
+            document.querySelectorAll('.alumno-check').forEach(cb => cb.checked = false);
+            document.getElementById('select_all').checked = false;
             modalAsignar.show();
         });
     });
