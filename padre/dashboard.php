@@ -1,8 +1,5 @@
 <?php
-// ============================================
-// padre/dashboard.php
-// Panel de control del padre
-// ============================================
+
 require_once '../config/config.php';
 require_once '../config/database.php';
 require_once '../includes/functions.php';

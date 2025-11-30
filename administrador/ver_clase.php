@@ -58,9 +58,6 @@ include '../includes/header.php';
                     <a href="clases.php" class="btn btn-outline-secondary me-2">
                         <i class="bi bi-arrow-left"></i> Volver
                     </a>
-                    <button class="btn btn-warning me-2" data-bs-toggle="modal" data-bs-target="#modalEditarClase">
-                        <i class="bi bi-pencil"></i> Editar
-                    </button>
                     <?php if ($clase['estado'] === 'programada'): ?>
                         <button class="btn btn-danger" onclick="eliminarClase(<?php echo $clase['id_clase']; ?>)">
                             <i class="bi bi-trash"></i> Eliminar

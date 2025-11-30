@@ -46,11 +46,6 @@
         </h6>
         <ul class="nav flex-column mb-2">
             <li class="nav-item">
-                <a class="nav-link" href="<?php echo SITE_URL; ?>administrador/progreso.php">
-                    <i class="bi bi-graph-up"></i> Progreso Alumnos
-                </a>
-            </li>
-            <li class="nav-item">
                 <a class="nav-link" href="<?php echo SITE_URL; ?>administrador/estadisticas.php">
                     <i class="bi bi-bar-chart"></i> Estadísticas
                 </a>

@@ -135,7 +135,14 @@ include '../includes/header.php';
                                     
                                     <div class="col-md-6 mb-3">
                                         <label for="hora_solicitada" class="form-label">Hora Preferida *</label>
-                                        <input type="time" class="form-control" id="hora_solicitada" name="hora_solicitada" required>
+                                        <select class="form-select" id="hora_solicitada" name="hora_solicitada" required>
+                                            <option value="">Seleccione una hora...</option>
+                                            <option value="09:30">09:30</option>
+                                            <option value="12:00">12:00</option>
+                                            <option value="15:00">15:00</option>
+                                            <option value="17:00">17:00</option>
+                                            <option value="19:00">19:00</option>
+                                        </select>
                                     </div>
                                 </div>
 
