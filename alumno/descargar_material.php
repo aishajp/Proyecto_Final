@@ -1,8 +1,5 @@
 <?php
-// ============================================
-// alumno/descargar_material.php
-// Descarga de material
-// ============================================
+// alumno/descargar_material.php - SIN VALIDACIÓN DE ASIGNACIÓN
 require_once '../config/config.php';
 require_once '../config/database.php';
 require_once '../includes/functions.php';
@@ -20,18 +17,13 @@ if ($id_material === 0) {
 
 $db = Database::getInstance()->getConnection();
 
-// Verificar que el material está asignado al alumno
-$stmt = $db->prepare("
-    SELECT m.* 
-    FROM materiales m
-    INNER JOIN material_asignado ma ON m.id_material = ma.id_material
-    WHERE m.id_material = ? AND ma.id_alumno = ? AND m.activo = 1
-");
-$stmt->execute([$id_material, $_SESSION['user_id']]);
+// Obtener material (sin validar asignación, todos pueden descargarlo)
+$stmt = $db->prepare("SELECT * FROM materiales WHERE id_material = ? AND activo = 1");
+$stmt->execute([$id_material]);
 $material = $stmt->fetch();
 
 if (!$material) {
-    set_message('No tienes permiso para acceder a este material', MSG_ERROR);
+    set_message('Material no encontrado o no disponible', MSG_ERROR);
     redirect('alumno/materiales.php');
 }
 
@@ -45,8 +37,8 @@ $file_path = UPLOAD_DIR . 'materiales/' . $material['archivo'];
 if (file_exists($file_path)) {
     // Establecer headers para descarga
     header('Content-Description: File Transfer');
-    header('Content-Type: application/octet-stream');
-    header('Content-Disposition: attachment; filename="' . basename($material['archivo']) . '"');
+    header('Content-Type: application/pdf');
+    header('Content-Disposition: attachment; filename="' . $material['titulo'] . '.pdf"');
     header('Content-Length: ' . filesize($file_path));
     header('Cache-Control: must-revalidate');
     header('Pragma: public');

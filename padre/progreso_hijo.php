@@ -10,21 +10,38 @@ if (!is_logged_in() || !has_role(ROL_PADRE)) {
 $db = Database::getInstance()->getConnection();
 $user_id = $_SESSION['user_id'];
 
-$id_hijo = isset($_GET['hijo']) ? (int)$_GET['hijo'] : 0;
-
-// Verificar que el hijo pertenece al padre
+// Obtener hijos del padre
 $stmt = $db->prepare("
     SELECT u.*, rph.id_relacion
     FROM usuarios u
     INNER JOIN relacion_padre_hijo rph ON u.id_usuario = rph.id_alumno
-    WHERE rph.id_padre = ? AND u.id_usuario = ?
+    WHERE rph.id_padre = ?
 ");
-$stmt->execute([$user_id, $id_hijo]);
-$hijo = $stmt->fetch();
+$stmt->execute([$user_id]);
+$hijos = $stmt->fetchAll();
 
-if (!$hijo) {
-    set_message('No tienes acceso a este alumno', MSG_ERROR);
+// Si no tiene hijos, redirigir
+if (count($hijos) === 0) {
+    set_message('No tienes hijos vinculados', MSG_ERROR);
     redirect('padre/dashboard.php');
+}
+
+// Obtener el hijo seleccionado o el primero por defecto
+$id_hijo = isset($_GET['hijo']) ? (int)$_GET['hijo'] : $hijos[0]['id_usuario'];
+
+// Buscar el hijo en el array
+$hijo = null;
+foreach ($hijos as $h) {
+    if ($h['id_usuario'] == $id_hijo) {
+        $hijo = $h;
+        break;
+    }
+}
+
+// Si no se encontró, usar el primero
+if (!$hijo) {
+    $hijo = $hijos[0];
+    $id_hijo = $hijo['id_usuario'];
 }
 
 // Obtener progreso actual

@@ -1,5 +1,4 @@
 <?php
-// administrador/materiales.php - SIMPLIFICADO
 require_once '../config/config.php';
 require_once '../config/database.php';
 require_once '../includes/functions.php';
@@ -20,11 +19,6 @@ $stmt = $db->prepare("
 ");
 $stmt->execute();
 $materiales = $stmt->fetchAll();
-
-// Obtener alumnos para asignación
-$stmt = $db->prepare("SELECT id_usuario, nombre, apellidos FROM usuarios WHERE rol = 'alumno' AND activo = 1 ORDER BY nombre");
-$stmt->execute();
-$alumnos = $stmt->fetchAll();
 
 include '../includes/header.php';
 ?>
@@ -81,19 +75,13 @@ include '../includes/header.php';
                                 <div class="small text-muted mb-2">
                                     <i class="bi bi-download"></i> Descargas: <?php echo $material['descargas']; ?>
                                 </div>
-                                
-                                <?php
-                                $stmt_count = $db->prepare("SELECT COUNT(*) as total FROM material_asignado WHERE id_material = ?");
-                                $stmt_count->execute([$material['id_material']]);
-                                $asignaciones = $stmt_count->fetch()['total'];
-                                ?>
                                 <div class="small text-muted mb-2">
-                                    <i class="bi bi-people"></i> Asignado a: <?php echo $asignaciones; ?> alumno(s)
+                                    <i class="bi bi-globe"></i> Disponible para todos los alumnos
                                 </div>
                             </div>
                             <div class="card-footer bg-white">
-                                <button class="btn btn-sm btn-success btn-asignar w-100" data-id="<?php echo $material['id_material']; ?>">
-                                    <i class="bi bi-person-plus"></i> Asignar a Alumnos
+                                <button class="btn btn-sm btn-danger btn-eliminar w-100" data-id="<?php echo $material['id_material']; ?>" data-titulo="<?php echo escape($material['titulo']); ?>">
+                                    <i class="bi bi-trash"></i> Eliminar Material
                                 </button>
                             </div>
                         </div>
@@ -151,7 +139,7 @@ include '../includes/header.php';
                     
                     <div class="alert alert-info">
                         <i class="bi bi-info-circle"></i> 
-                        <strong>Importante:</strong> Una vez subido el material, podrás asignarlo a los alumnos que necesites.
+                        <strong>Importante:</strong> El material estará disponible automáticamente para todos los alumnos.
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -163,70 +151,18 @@ include '../includes/header.php';
     </div>
 </div>
 
-<!-- Modal Asignar Material -->
-<div class="modal fade" id="modalAsignar" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Asignar Material a Alumnos</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <form method="POST" action="asignar_material.php">
-                <div class="modal-body">
-                    <input type="hidden" name="id_material" id="id_material_asignar">
-                    <input type="hidden" name="csrf_token" value="<?php echo generate_csrf_token(); ?>">
-                    
-                    <div class="mb-3">
-                        <label class="form-label">Seleccionar Alumnos *</label>
-                        <div style="max-height: 300px; overflow-y: auto; border: 1px solid #dee2e6; padding: 10px; border-radius: 5px;">
-                            <div class="form-check mb-2">
-                                <input class="form-check-input" type="checkbox" id="select_all">
-                                <label class="form-check-label" for="select_all">
-                                    <strong>Seleccionar Todos</strong>
-                                </label>
-                            </div>
-                            <hr>
-                            <?php foreach ($alumnos as $alumno): ?>
-                                <div class="form-check mb-2">
-                                    <input class="form-check-input alumno-check" type="checkbox" name="alumnos[]" 
-                                           value="<?php echo $alumno['id_usuario']; ?>" 
-                                           id="alumno_<?php echo $alumno['id_usuario']; ?>">
-                                    <label class="form-check-label" for="alumno_<?php echo $alumno['id_usuario']; ?>">
-                                        <?php echo escape($alumno['nombre'] . ' ' . $alumno['apellidos']); ?>
-                                    </label>
-                                </div>
-                            <?php endforeach; ?>
-                        </div>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="submit" class="btn btn-primary">Asignar Material</button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
-
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Modal asignar
-    const modalAsignar = new bootstrap.Modal(document.getElementById('modalAsignar'));
-    document.querySelectorAll('.btn-asignar').forEach(function(btn) {
+    // Eliminar material
+    document.querySelectorAll('.btn-eliminar').forEach(btn => {
         btn.addEventListener('click', function() {
-            document.getElementById('id_material_asignar').value = this.getAttribute('data-id');
-            // Limpiar checkboxes
-            document.querySelectorAll('.alumno-check').forEach(cb => cb.checked = false);
-            document.getElementById('select_all').checked = false;
-            modalAsignar.show();
+            const id = this.getAttribute('data-id');
+            const titulo = this.getAttribute('data-titulo');
+            
+            if (confirm(`¿Estás segura de que deseas ELIMINAR el material "${titulo}"?\n\nEsta acción NO se puede deshacer.`)) {
+                window.location.href = `eliminar_material.php?id=${id}`;
+            }
         });
-    });
-    
-    // Select all
-    document.getElementById('select_all').addEventListener('change', function() {
-        document.querySelectorAll('.alumno-check').forEach(function(checkbox) {
-            checkbox.checked = this.checked;
-        }.bind(this));
     });
 });
 </script>

@@ -1,4 +1,5 @@
 <?php
+// administrador/guardar_clase.php - CON VALIDACIONES
 require_once '../config/config.php';
 require_once '../config/database.php';
 require_once '../includes/functions.php';

@@ -1,8 +1,5 @@
 <?php
-// ============================================
-// alumno/mis_clases.php
-// Gestión de clases del alumno
-// ============================================
+// alumno/mis_clases.php - SIN ASISTENCIAS NI CANCELAR
 require_once '../config/config.php';
 require_once '../config/database.php';
 require_once '../includes/functions.php';
@@ -21,7 +18,7 @@ $tipo_filtro = isset($_GET['tipo']) ? $_GET['tipo'] : 'todas';
 
 // Construir consulta con filtros
 $sql = "
-    SELECT c.*, r.id_reserva, r.estado as estado_reserva, r.asistencia, r.fecha_reserva,
+    SELECT c.*, r.id_reserva, r.estado as estado_reserva, r.fecha_reserva,
            u.nombre as profesor_nombre, u.apellidos as profesor_apellidos
     FROM clases c
     INNER JOIN reservas r ON c.id_clase = r.id_clase
@@ -52,8 +49,7 @@ $stmt = $db->prepare("
     SELECT 
         COUNT(*) as total,
         SUM(CASE WHEN r.estado = 'confirmada' AND c.fecha >= CURDATE() THEN 1 ELSE 0 END) as proximas,
-        SUM(CASE WHEN r.estado = 'completada' THEN 1 ELSE 0 END) as completadas,
-        SUM(CASE WHEN r.asistencia = 'presente' THEN 1 ELSE 0 END) as asistidas
+        SUM(CASE WHEN r.estado = 'completada' THEN 1 ELSE 0 END) as completadas
     FROM reservas r
     INNER JOIN clases c ON r.id_clase = c.id_clase
     WHERE r.id_usuario = ?
@@ -80,7 +76,7 @@ include '../includes/header.php';
 
             <!-- Estadísticas -->
             <div class="row mb-4">
-                <div class="col-md-3">
+                <div class="col-md-4">
                     <div class="card bg-primary text-white">
                         <div class="card-body">
                             <h6 class="card-title">Total Clases</h6>
@@ -88,7 +84,7 @@ include '../includes/header.php';
                         </div>
                     </div>
                 </div>
-                <div class="col-md-3">
+                <div class="col-md-4">
                     <div class="card bg-info text-white">
                         <div class="card-body">
                             <h6 class="card-title">Próximas</h6>
@@ -96,19 +92,11 @@ include '../includes/header.php';
                         </div>
                     </div>
                 </div>
-                <div class="col-md-3">
+                <div class="col-md-4">
                     <div class="card bg-success text-white">
                         <div class="card-body">
                             <h6 class="card-title">Completadas</h6>
                             <h2 class="mb-0"><?php echo $stats['completadas']; ?></h2>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-3">
-                    <div class="card bg-warning text-dark">
-                        <div class="card-body">
-                            <h6 class="card-title">Asistencia</h6>
-                            <h2 class="mb-0"><?php echo $stats['total'] > 0 ? round(($stats['asistidas'] / $stats['total']) * 100) : 0; ?>%</h2>
                         </div>
                     </div>
                 </div>
@@ -160,7 +148,6 @@ include '../includes/header.php';
                                         <th>Nivel</th>
                                         <th>Profesor</th>
                                         <th>Estado</th>
-                                        <th>Asistencia</th>
                                         <th>Acciones</th>
                                     </tr>
                                 </thead>
@@ -196,23 +183,9 @@ include '../includes/header.php';
                                                 </span>
                                             </td>
                                             <td>
-                                                <?php if ($clase['asistencia']): ?>
-                                                    <span class="badge bg-<?php echo $clase['asistencia'] === 'presente' ? 'success' : 'warning'; ?>">
-                                                        <?php echo ucfirst($clase['asistencia']); ?>
-                                                    </span>
-                                                <?php else: ?>
-                                                    <span class="text-muted">-</span>
-                                                <?php endif; ?>
-                                            </td>
-                                            <td>
                                                 <a href="detalle_clase.php?id=<?php echo $clase['id_clase']; ?>" class="btn btn-sm btn-info" title="Ver detalles">
                                                     <i class="bi bi-eye"></i>
                                                 </a>
-                                                <?php if ($clase['estado_reserva'] === 'confirmada' && is_future_date($clase['fecha'])): ?>
-                                                    <button class="btn btn-sm btn-danger btn-cancelar" data-id="<?php echo $clase['id_reserva']; ?>" title="Cancelar">
-                                                        <i class="bi bi-x-circle"></i>
-                                                    </button>
-                                                <?php endif; ?>
                                             </td>
                                         </tr>
                                     <?php endforeach; ?>
@@ -229,48 +202,5 @@ include '../includes/header.php';
         </main>
     </div>
 </div>
-
-<!-- Modal para cancelar clase -->
-<div class="modal fade" id="modalCancelar" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Cancelar Reserva</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <form id="formCancelar" method="POST" action="cancelar_clase.php">
-                <div class="modal-body">
-                    <input type="hidden" name="id_reserva" id="id_reserva_cancelar">
-                    <input type="hidden" name="csrf_token" value="<?php echo generate_csrf_token(); ?>">
-                    
-                    <p>¿Estás seguro de que deseas cancelar esta clase?</p>
-                    
-                    <div class="mb-3">
-                        <label class="form-label">Motivo de cancelación (opcional)</label>
-                        <textarea class="form-control" name="motivo" rows="3"></textarea>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
-                    <button type="submit" class="btn btn-danger">Cancelar Clase</button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
-
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    const modalCancelar = new bootstrap.Modal(document.getElementById('modalCancelar'));
-    
-    document.querySelectorAll('.btn-cancelar').forEach(function(btn) {
-        btn.addEventListener('click', function() {
-            const idReserva = this.getAttribute('data-id');
-            document.getElementById('id_reserva_cancelar').value = idReserva;
-            modalCancelar.show();
-        });
-    });
-});
-</script>
 
 <?php include '../includes/footer.php'; ?>

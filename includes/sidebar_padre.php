@@ -9,7 +9,7 @@
                 </a>
             </li>
             <li class="nav-item">
-                <a class="nav-link" href="<?php echo SITE_URL; ?>padre/progreso_hijo.php">
+                <a class="nav-link" href="<?php echo SITE_URL; ?>padre/progreso_hijo.php">                    
                     <i class="bi bi-graph-up"></i> Progreso de mi Hijo
                 </a>
             </li>
