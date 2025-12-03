@@ -50,13 +50,14 @@ try {
     $stmt = $db->prepare("DELETE FROM relacion_padre_hijo WHERE id_padre = ? OR id_alumno = ?");
     $stmt->execute([$id_usuario, $id_usuario]);
     
-    // Cancelar reservas futuras
-    $stmt = $db->prepare("
-        UPDATE reservas 
-        SET estado = 'cancelada', motivo_cancelacion = 'Usuario eliminado'
-        WHERE id_usuario = ?
-    ");
-    $stmt->execute([$id_usuario]);
+  // Cancelar reservas futuras
+$stmt = $db->prepare("
+    UPDATE reservas 
+    SET estado = 'cancelada'
+    WHERE id_usuario = ?
+");
+$stmt->execute([$id_usuario]);
+
     
     // Finalmente eliminar el usuario
     $stmt = $db->prepare("DELETE FROM usuarios WHERE id_usuario = ?");

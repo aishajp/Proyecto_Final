@@ -37,19 +37,20 @@ try {
     $db->beginTransaction();
     
     // Cancelar todas las reservas
-    $stmt = $db->prepare("
-        UPDATE reservas 
-        SET estado = 'cancelada', 
-            motivo_cancelacion = 'Clase eliminada por el administrador'
-        WHERE id_clase = ?
-    ");
-    $stmt->execute([$id_clase]);
+$stmt = $db->prepare("
+    UPDATE reservas 
+    SET estado = 'cancelada'
+    WHERE id_clase = ?
+");
+$stmt->execute([$id_clase]);
+
     
     // Notificar a los usuarios afectados
     $stmt = $db->prepare("
-        SELECT DISTINCT id_usuario 
-        FROM reservas 
-        WHERE id_clase = ? AND estado = 'cancelada'
+       SELECT DISTINCT id_usuario 
+FROM reservas 
+WHERE id_clase = ? AND estado = 'cancelada'
+
     ");
     $stmt->execute([$id_clase]);
     $usuarios_afectados = $stmt->fetchAll();
