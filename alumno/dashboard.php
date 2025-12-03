@@ -1,13 +1,9 @@
 <?php
-// ============================================
-// alumno/dashboard.php
-// Panel de control del alumno
-// ============================================
+// alumno/dashboard.php - SIN ASISTENCIA
 require_once '../config/config.php';
 require_once '../config/database.php';
 require_once '../includes/functions.php';
 
-// Verificar autenticación y rol
 if (!is_logged_in() || !has_role(ROL_ALUMNO)) {
     redirect('auth/login.php');
 }
@@ -15,9 +11,9 @@ if (!is_logged_in() || !has_role(ROL_ALUMNO)) {
 $db = Database::getInstance()->getConnection();
 $user_id = $_SESSION['user_id'];
 
-// Obtener próximas clases del alumno
+// Obtener próximas clases del alumno - SIN ASISTENCIA
 $stmt = $db->prepare("
-    SELECT c.*, r.estado as estado_reserva, r.asistencia
+    SELECT c.*, r.estado as estado_reserva
     FROM clases c
     INNER JOIN reservas r ON c.id_clase = r.id_clase
     WHERE r.id_usuario = ? AND c.fecha >= CURDATE() AND c.estado != 'cancelada'
@@ -42,24 +38,22 @@ $stmt = $db->prepare("SELECT * FROM progreso_alumno WHERE id_alumno = ?");
 $stmt->execute([$user_id]);
 $progreso = $stmt->fetch();
 
-// Obtener materiales recientes
+// Obtener materiales recientes (sin asignación por alumno)
 $stmt = $db->prepare("
-    SELECT m.*, ma.fecha_asignacion, ma.completado
-    FROM materiales m
-    INNER JOIN material_asignado ma ON m.id_material = ma.id_material
-    WHERE ma.id_alumno = ? AND m.activo = 1
-    ORDER BY ma.fecha_asignacion DESC
+    SELECT *
+    FROM materiales
+    WHERE activo = 1
+    ORDER BY id_material DESC
     LIMIT 5
 ");
-$stmt->execute([$user_id]);
+$stmt->execute();
 $materiales_recientes = $stmt->fetchAll();
 
-// Estadísticas del alumno
+// Estadísticas del alumno - SIN ASISTENCIA
 $stmt = $db->prepare("
     SELECT 
         COUNT(*) as total_clases,
-        SUM(CASE WHEN r.estado = 'completada' THEN 1 ELSE 0 END) as clases_completadas,
-        SUM(CASE WHEN r.asistencia = 'presente' THEN 1 ELSE 0 END) as clases_asistidas
+        SUM(CASE WHEN c.estado = 'completada' THEN 1 ELSE 0 END) as clases_completadas
     FROM reservas r
     INNER JOIN clases c ON r.id_clase = c.id_clase
     WHERE r.id_usuario = ?
@@ -72,10 +66,8 @@ include '../includes/header.php';
 
 <div class="container-fluid">
     <div class="row">
-        <!-- Sidebar -->
         <?php include '../includes/sidebar_alumno.php'; ?>
         
-        <!-- Contenido principal -->
         <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
             <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
                 <h1 class="h2">Panel de Alumno</h1>
@@ -285,35 +277,24 @@ include '../includes/header.php';
                                 <div class="table-responsive">
                                     <table class="table">
                                         <thead>
-                                            <tr>
-                                                <th>Título</th>
-                                                <th>Tipo</th>
-                                                <th>Nivel</th>
-                                                <th>Fecha Asignación</th>
-                                                <th>Estado</th>
-                                                <th>Acciones</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            <?php foreach ($materiales_recientes as $material): ?>
-                                                <tr>
-                                                    <td><?php echo escape($material['titulo']); ?></td>
-                                                    <td><span class="badge bg-primary"><?php echo $material['tipo']; ?></span></td>
-                                                    <td><?php echo $material['nivel']; ?></td>
-                                                    <td><?php echo format_date($material['fecha_asignacion']); ?></td>
-                                                    <td>
-                                                        <?php if ($material['completado']): ?>
-                                                            <span class="badge bg-success">Completado</span>
-                                                        <?php else: ?>
-                                                            <span class="badge bg-warning">Pendiente</span>
-                                                        <?php endif; ?>
-                                                    </td>
-                                                    <td>
-                                                        <a href="ver_material.php?id=<?php echo $material['id_material']; ?>" class="btn btn-sm btn-info">Ver</a>
-                                                    </td>
-                                                </tr>
-                                            <?php endforeach; ?>
-                                        </tbody>
+    <thead>
+    <tr>
+        <th>Título</th>
+        <th>Tipo</th>
+        <th>Nivel</th>
+    </tr>
+</thead>
+<tbody>
+    <?php foreach ($materiales_recientes as $material): ?>
+        <tr>
+            <td><?php echo escape($material['titulo']); ?></td>
+            <td><span class="badge bg-primary"><?php echo $material['tipo']; ?></span></td>
+            <td><?php echo $material['nivel']; ?></td>
+        </tr>
+    <?php endforeach; ?>
+</tbody>
+
+
                                     </table>
                                 </div>
                             <?php else: ?>

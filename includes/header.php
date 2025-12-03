@@ -13,7 +13,7 @@
     
     <!-- Custom CSS -->
     <link href="<?php echo SITE_URL; ?>assets/css/styles.css" rel="stylesheet">
-    
+
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -56,7 +56,7 @@
                             </a>
                             <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
                                 <li>
-                                    <a class="dropdown-item" href="<?php echo SITE_URL . $_SESSION['user_role']; ?>/mi_perfil.php">
+                                    <a class="dropdown-item" href="<?php echo SITE_URL . $_SESSION['user_role']; ?>/dashboard.php">
                                         <i class="bi bi-person"></i> Mi Perfil
                                     </a>
                                 </li>
