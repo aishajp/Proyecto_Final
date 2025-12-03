@@ -26,9 +26,9 @@ $hijo_seleccionado = isset($_GET['hijo']) ? (int)$_GET['hijo'] : (count($hijos) 
 // Filtros
 $estado_filtro = isset($_GET['estado']) ? $_GET['estado'] : 'todas';
 
-// Obtener historial de clases del hijo
+// Obtener historial de clases del hijo - SIN COLUMNA ASISTENCIA
 $sql = "
-    SELECT c.*, r.id_reserva, r.estado as estado_reserva, r.asistencia, r.fecha_reserva,
+    SELECT c.*, r.id_reserva, r.estado as estado_reserva, r.fecha_reserva,
            u.nombre as profesor_nombre, u.apellidos as profesor_apellidos
     FROM clases c
     INNER JOIN reservas r ON c.id_clase = r.id_clase
@@ -116,8 +116,8 @@ include '../includes/header.php';
                                             <th>Hora</th>
                                             <th>Tipo</th>
                                             <th>Nivel</th>
+                                            <th>Profesor</th>
                                             <th>Estado</th>
-                                            <th>Asistencia</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -132,6 +132,7 @@ include '../includes/header.php';
                                                     </span>
                                                 </td>
                                                 <td><?php echo ucfirst($clase['nivel']); ?></td>
+                                                <td><?php echo escape($clase['profesor_nombre'] . ' ' . $clase['profesor_apellidos']); ?></td>
                                                 <td>
                                                     <?php
                                                     $badge_color = 'secondary';
@@ -144,15 +145,6 @@ include '../includes/header.php';
                                                     <span class="badge bg-<?php echo $badge_color; ?>">
                                                         <?php echo ucfirst($clase['estado_reserva']); ?>
                                                     </span>
-                                                </td>
-                                                <td>
-                                                    <?php if ($clase['asistencia']): ?>
-                                                        <span class="badge bg-<?php echo $clase['asistencia'] === 'presente' ? 'success' : 'warning'; ?>">
-                                                            <?php echo ucfirst($clase['asistencia']); ?>
-                                                        </span>
-                                                    <?php else: ?>
-                                                        <span class="text-muted">-</span>
-                                                    <?php endif; ?>
                                                 </td>
                                             </tr>
                                         <?php endforeach; ?>

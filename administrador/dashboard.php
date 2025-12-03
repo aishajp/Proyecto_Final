@@ -66,20 +66,6 @@ $stmt = $db->prepare("
 $stmt->execute();
 $top_alumnos = $stmt->fetchAll();
 
-// Estadísticas de asistencia del mes
-$stmt = $db->prepare("
-    SELECT 
-        COUNT(*) as total_clases,
-        SUM(CASE WHEN r.asistencia = 'presente' THEN 1 ELSE 0 END) as presentes,
-        SUM(CASE WHEN r.asistencia = 'ausente' THEN 1 ELSE 0 END) as ausentes
-    FROM reservas r
-    INNER JOIN clases c ON r.id_clase = c.id_clase
-    WHERE MONTH(c.fecha) = MONTH(CURDATE()) AND YEAR(c.fecha) = YEAR(CURDATE())
-    AND c.estado = 'completada'
-");
-$stmt->execute();
-$stats_asistencia = $stmt->fetch();
-
 include '../includes/header.php';
 ?>
 
